@@ -2,7 +2,7 @@
   "jest.jestCommandLine": "npx jest",
   "typescript.tsdk": "node_modules/typescript/lib",
   "prettier.configPath": "./townService/.prettierrc.cjs",
-  "editor.formatOnSave": false,
+  "editor.formatOnSave": true,
   // Runs Prettier, then ESLint
   "editor.codeActionsOnSave": [
     "source.formatDocument",
