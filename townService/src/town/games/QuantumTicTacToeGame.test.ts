@@ -7,6 +7,7 @@ import {
   BOARD_POSITION_NOT_EMPTY_MESSAGE,
   PLAYER_ALREADY_IN_GAME_MESSAGE,
   GAME_FULL_MESSAGE,
+  MOVE_NOT_YOUR_TURN_MESSAGE,
 } from '../../lib/InvalidParametersError';
 
 describe('QuantumTicTacToeGame', () => {
@@ -163,6 +164,10 @@ describe('QuantumTicTacToeGame', () => {
       makeMove(player1, 'A', 0, 0);
       makeMove(player2, 'A', 0, 0); // should not error
       expect(() => makeMove(player1, 'A', 0, 0)).toThrowError(BOARD_POSITION_NOT_EMPTY_MESSAGE);
+    });
+    it('should throw an error if a player moves out of turn', () => {
+      makeMove(player1, 'A', 0, 0);
+      expect(() => makeMove(player1, 'A', 0, 1)).toThrowError(MOVE_NOT_YOUR_TURN_MESSAGE);
     });
   });
 });
