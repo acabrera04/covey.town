@@ -117,3 +117,6 @@ ngrok.yml
 
 # Local Netlify folder
 .netlify
+
+# Zip file for submissions
+covey-town.zip
