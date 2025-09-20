@@ -2,6 +2,10 @@ import { createPlayerForTesting } from '../../TestUtils';
 import Player from '../../lib/Player';
 import { GameMove } from '../../types/CoveyTownSocket';
 import QuantumTicTacToeGame from './QuantumTicTacToeGame';
+import {
+  PLAYER_NOT_IN_GAME_MESSAGE,
+  BOARD_POSITION_NOT_EMPTY_MESSAGE,
+} from '../../lib/InvalidParametersError';
 
 describe('QuantumTicTacToeGame', () => {
   let game: QuantumTicTacToeGame;
@@ -35,6 +39,39 @@ describe('QuantumTicTacToeGame', () => {
         expect(game.state.status).toBe('OVER');
         expect(game.state.winner).toBe(player2.id);
       });
+    });
+    describe('when two players are in the game and player 2 leaves first', () => {
+      beforeEach(() => {
+        game.join(player1);
+        game.join(player2);
+      });
+
+      it('should set the game to OVER and declare the player1 the winner', () => {
+        game.leave(player2);
+        expect(game.state.status).toBe('OVER');
+        expect(game.state.winner).toBe(player1.id);
+      });
+    });
+    describe('when one player is in the game', () => {
+      beforeEach(() => {
+        game.join(player1);
+      });
+
+      it('should set the game to WAITING_TO_START and reset the scores', () => {
+        game.leave(player1);
+        expect(game.state.status).toBe('WAITING_TO_START');
+        expect(game.state.xScore).toBe(0);
+        expect(game.state.oScore).toBe(0);
+      });
+    });
+
+    // taken from TicTacToeGame.test.ts
+    it('should throw an error if the player is not in the game', () => {
+      expect(() => game.leave(createPlayerForTesting())).toThrowError(PLAYER_NOT_IN_GAME_MESSAGE);
+      // TODO weaker test suite only does one of these - above or below
+      const player = createPlayerForTesting();
+      game.join(player);
+      expect(() => game.leave(createPlayerForTesting())).toThrowError(PLAYER_NOT_IN_GAME_MESSAGE);
     });
   });
 
@@ -73,6 +110,11 @@ describe('QuantumTicTacToeGame', () => {
         expect(game.state.xScore).toBe(1);
         expect(game.state.oScore).toBe(0);
       });
+    });
+    it('should throw an error if a move is made on a tile that was made public', () => {
+      makeMove(player1, 'A', 0, 0);
+      makeMove(player2, 'A', 0, 0); // should not error
+      expect(() => makeMove(player1, 'A', 0, 0)).toThrowError(BOARD_POSITION_NOT_EMPTY_MESSAGE);
     });
   });
 });

@@ -26,6 +26,8 @@ export default class QuantumTicTacToeGame extends Game<
 > {
   private _games: { A: TicTacToeGame; B: TicTacToeGame; C: TicTacToeGame };
 
+  private _gamesWon: { A: boolean; B: boolean; C: boolean };
+
   private _xScore: number;
 
   private _oScore: number;
@@ -65,6 +67,42 @@ export default class QuantumTicTacToeGame extends Game<
       B: new TicTacToeGame(),
       C: new TicTacToeGame(),
     };
+    this._gamesWon = {
+      A: false,
+      B: false,
+      C: false,
+    };
+  }
+
+  private get _boards() {
+    const { moves } = this.state;
+    const boards = {
+      A: [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', ''],
+      ],
+      B: [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', ''],
+      ],
+      C: [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', ''],
+      ],
+    };
+    for (const move of moves) {
+      if (move.board === 'A') {
+        boards.A[move.row][move.col] = move.gamePiece;
+      } else if (move.board === 'B') {
+        boards.B[move.row][move.col] = move.gamePiece;
+      } else {
+        boards.C[move.row][move.col] = move.gamePiece;
+      }
+    }
+    return boards;
   }
 
   protected _join(player: Player): void {
@@ -104,18 +142,44 @@ export default class QuantumTicTacToeGame extends Game<
     this._games.A.leave(player);
     this._games.B.leave(player);
     this._games.C.leave(player);
-    // Handles case where the game has not started yet
+    // Handles case where the game has not started yet or both players leave
     if (this.state.o === undefined) {
+      // code is repeated with constructor, so find a way to reduce
       this.state = {
         moves: [],
         xScore: 0,
         oScore: 0,
         publiclyVisible: {
-          A: [],
-          B: [],
-          C: [],
+          A: [
+            [false, false, false],
+            [false, false, false],
+            [false, false, false],
+          ],
+          B: [
+            [false, false, false],
+            [false, false, false],
+            [false, false, false],
+          ],
+          C: [
+            [false, false, false],
+            [false, false, false],
+            [false, false, false],
+          ],
         },
         status: 'WAITING_TO_START',
+      };
+      this._xScore = 0;
+      this._oScore = 0;
+      this._moveCount = 0;
+      this._games = {
+        A: new TicTacToeGame(),
+        B: new TicTacToeGame(),
+        C: new TicTacToeGame(),
+      };
+      this._gamesWon = {
+        A: false,
+        B: false,
+        C: false,
       };
       return;
     }
@@ -140,11 +204,9 @@ export default class QuantumTicTacToeGame extends Game<
    * @see TicTacToeGame#_validateMove
    */
   private _validateMove(move: GameMove<QuantumTicTacToeMove>): void {
-    // TODO: implement me
-    for (const m of this.state.moves) {
-      if (m.board === move.move.board && m.col === move.move.col && m.row === move.move.row) {
-        throw new InvalidParametersError(BOARD_POSITION_NOT_EMPTY_MESSAGE);
-      }
+    // A move is only valid if the public space is false
+    if (this.state.publiclyVisible[move.move.board][move.move.row][move.move.col]) {
+      throw new InvalidParametersError(BOARD_POSITION_NOT_EMPTY_MESSAGE);
     }
     // A move is only valid if it is the player's turn
     if (move.move.gamePiece === 'X' && this.state.moves.length % 2 === 1) {
@@ -162,59 +224,40 @@ export default class QuantumTicTacToeGame extends Game<
     this._validateMove(move);
 
     // TODO: implement the guts of this method
+    try {
+      this._games[move.move.board].applyMove(move);
+      this._moveCount++;
+      this.state = {
+        ...this.state,
+        moves: [...this.state.moves, move.move],
+      };
+    } catch (e) {
+      // If a player makes a move on a square that's already occupied, they lose their turn (so don't error)
+      // and that square is revealed on the public board
+      if (e instanceof InvalidParametersError && e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE) {
+        // copying the array for updating https://bobbyhadz.com/blog/typescript-array-deep-copy#create-a-deep-copy-of-an-array-in-typescript
+        const newPubliclyVisible = JSON.parse(JSON.stringify(this.state.publiclyVisible));
+        newPubliclyVisible[move.move.board][move.move.row][move.move.col] = true;
 
+        // for keeping track of the player's turn order, we must add the move to the moves tracker
+        // so we'll represent row and col as -1
+        this.state = {
+          ...this.state,
+          publiclyVisible: newPubliclyVisible,
+          // have to figure out a way to not have the actual move added
+          moves: [...this.state.moves, move.move],
+        };
+      } else {
+        throw e;
+      }
+    }
     this._checkForWins();
     this._checkForGameEnding();
   }
 
-  private _checkForWinsHelper(game: TicTacToeGame): void {
-    const board = game;
+  private _checkForWinsHelper(board: string[][]): void {
     // A game ends when there are 3 in a row
     // Check for 3 in a row or column
-    for (let i = 0; i < 3; i++) {
-      if (board[i][0] !== '' && board[i][0] === board[i][1] && board[i][0] === board[i][2]) {
-        this.state = {
-          ...this.state,
-          status: 'OVER',
-          winner: board[i][0] === 'X' ? this.state.x : this.state.o,
-        };
-        return;
-      }
-      if (board[0][i] !== '' && board[0][i] === board[1][i] && board[0][i] === board[2][i]) {
-        this.state = {
-          ...this.state,
-          status: 'OVER',
-          winner: board[0][i] === 'X' ? this.state.x : this.state.o,
-        };
-        return;
-      }
-    }
-    // Check for 3 in a diagonal
-    if (board[0][0] !== '' && board[0][0] === board[1][1] && board[0][0] === board[2][2]) {
-      this.state = {
-        ...this.state,
-        status: 'OVER',
-        winner: board[0][0] === 'X' ? this.state.x : this.state.o,
-      };
-      return;
-    }
-    // Check for 3 in the other diagonal
-    if (board[0][2] !== '' && board[0][2] === board[1][1] && board[0][2] === board[2][0]) {
-      this.state = {
-        ...this.state,
-        status: 'OVER',
-        winner: board[0][2] === 'X' ? this.state.x : this.state.o,
-      };
-      return;
-    }
-    // Check for no more moves
-    if (this.state.moves.length === 9) {
-      this.state = {
-        ...this.state,
-        status: 'OVER',
-        winner: undefined,
-      };
-    }
   }
 
   /**
@@ -223,9 +266,10 @@ export default class QuantumTicTacToeGame extends Game<
    */
   private _checkForWins(): void {
     // TODO: implement me
-    this._checkForWinsHelper(this._games.A);
-    this._checkForWinsHelper(this._games.B);
-    this._checkForWinsHelper(this._games.C);
+    const boards = this._boards;
+    this._checkForWinsHelper(boards.A);
+    this._checkForWinsHelper(boards.B);
+    this._checkForWinsHelper(boards.C);
   }
 
   /**
