@@ -5,6 +5,8 @@ import QuantumTicTacToeGame from './QuantumTicTacToeGame';
 import {
   PLAYER_NOT_IN_GAME_MESSAGE,
   BOARD_POSITION_NOT_EMPTY_MESSAGE,
+  PLAYER_ALREADY_IN_GAME_MESSAGE,
+  GAME_FULL_MESSAGE,
 } from '../../lib/InvalidParametersError';
 
 describe('QuantumTicTacToeGame', () => {
@@ -24,6 +26,23 @@ describe('QuantumTicTacToeGame', () => {
       expect(game.state.x).toBe(player1.id);
       expect(game.state.o).toBeUndefined();
       expect(game.state.status).toBe('WAITING_TO_START');
+    });
+    describe('when two players join the game', () => {
+      beforeEach(() => {
+        game.join(player1);
+        game.join(player2);
+      });
+      it('should add the first player as X and the second player as O', () => {
+        expect(game.state.x).toBe(player1.id);
+        expect(game.state.o).toBe(player2.id);
+        expect(game.state.status).toBe('IN_PROGRESS');
+      });
+      it('should error if the same player joins', () => {
+        expect(() => game.join(player1)).toThrowError(PLAYER_ALREADY_IN_GAME_MESSAGE);
+      });
+      it('should error if the game is full', () => {
+        expect(() => game.join(createPlayerForTesting())).toThrowError(GAME_FULL_MESSAGE);
+      });
     });
   });
 
@@ -109,6 +128,35 @@ describe('QuantumTicTacToeGame', () => {
 
         expect(game.state.xScore).toBe(1);
         expect(game.state.oScore).toBe(0);
+      });
+      it('should end when a player wins all three boards', () => {
+        // X gets a win on board A
+        makeMove(player1, 'A', 0, 0); // X
+        makeMove(player2, 'B', 0, 0); // O
+        makeMove(player1, 'A', 0, 1); // X
+        makeMove(player2, 'B', 0, 1); // O
+        makeMove(player1, 'A', 0, 2); // X -> scores 1 point
+
+        // X gets a win on board B
+        makeMove(player2, 'B', 1, 0); // O
+        makeMove(player1, 'B', 0, 2); // X
+        makeMove(player2, 'B', 1, 1); // X
+        makeMove(player1, 'B', 1, 2); // X
+        makeMove(player2, 'C', 0, 0); // X
+        makeMove(player1, 'B', 2, 2); // X
+
+        // X gets a win on board C
+        makeMove(player2, 'C', 2, 0); // O
+        makeMove(player1, 'C', 0, 1); // X
+        makeMove(player2, 'C', 1, 2); // X
+        makeMove(player1, 'C', 1, 1); // X
+        makeMove(player2, 'C', 0, 1); // X
+        makeMove(player1, 'C', 2, 1); // X
+
+        expect(game.state.xScore).toBe(3);
+        expect(game.state.oScore).toBe(0);
+        expect(game.state.status).toBe('OVER');
+        expect(game.state.winner).toBe(player1.id);
       });
     });
     it('should throw an error if a move is made on a tile that was made public', () => {

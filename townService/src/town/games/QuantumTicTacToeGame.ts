@@ -225,22 +225,26 @@ export default class QuantumTicTacToeGame extends Game<
 
     // TODO: implement the guts of this method
     try {
-      this._games[move.move.board].applyMove(move);
+      this._games[move.move.board].applyMove(move, true);
       this._moveCount++;
       this.state = {
         ...this.state,
         moves: [...this.state.moves, move.move],
       };
     } catch (e) {
-      // If a player makes a move on a square that's already occupied, they lose their turn (so don't error)
+      // If a player makes a move on a square that's already occupied or the board is over, they lose their turn (so don't error)
       // and that square is revealed on the public board
-      if (e instanceof InvalidParametersError && e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE) {
+      if (
+        e instanceof InvalidParametersError &&
+        (e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE ||
+          this._games[move.move.board].state.status === 'OVER')
+      ) {
         // copying the array for updating https://bobbyhadz.com/blog/typescript-array-deep-copy#create-a-deep-copy-of-an-array-in-typescript
         const newPubliclyVisible = JSON.parse(JSON.stringify(this.state.publiclyVisible));
-        newPubliclyVisible[move.move.board][move.move.row][move.move.col] = true;
-
-        // for keeping track of the player's turn order, we must add the move to the moves tracker
-        // so we'll represent row and col as -1
+        if (e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE) {
+          newPubliclyVisible[move.move.board][move.move.row][move.move.col] = true;
+        }
+        this._moveCount++;
         this.state = {
           ...this.state,
           publiclyVisible: newPubliclyVisible,
@@ -255,9 +259,28 @@ export default class QuantumTicTacToeGame extends Game<
     this._checkForGameEnding();
   }
 
-  private _checkForWinsHelper(board: string[][]): void {
-    // A game ends when there are 3 in a row
-    // Check for 3 in a row or column
+  private _checkForWinsHelper(board: 'A' | 'B' | 'C'): boolean {
+    const gameBoard = this._games[board];
+    if (gameBoard.state.status === 'OVER') {
+      if (!this._gamesWon[board]) {
+        this._gamesWon[board] = true;
+        if (gameBoard.state.winner === this.state.x) {
+          this._xScore++;
+          this.state = {
+            ...this.state,
+            xScore: this._xScore,
+          };
+        } else {
+          this._oScore++;
+          this.state = {
+            ...this.state,
+            oScore: this._oScore,
+          };
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -266,10 +289,9 @@ export default class QuantumTicTacToeGame extends Game<
    */
   private _checkForWins(): void {
     // TODO: implement me
-    const boards = this._boards;
-    this._checkForWinsHelper(boards.A);
-    this._checkForWinsHelper(boards.B);
-    this._checkForWinsHelper(boards.C);
+    this._checkForWinsHelper('A');
+    this._checkForWinsHelper('B');
+    this._checkForWinsHelper('C');
   }
 
   /**
@@ -278,5 +300,24 @@ export default class QuantumTicTacToeGame extends Game<
    */
   private _checkForGameEnding(): void {
     // TODO: implement me
+    if (
+      this._checkForWinsHelper('A') &&
+      this._checkForWinsHelper('B') &&
+      this._checkForWinsHelper('C')
+    ) {
+      if (this._xScore === this._oScore) {
+        this.state = {
+          ...this.state,
+          status: 'OVER',
+          winner: undefined,
+        };
+      } else {
+        this.state = {
+          ...this.state,
+          status: 'OVER',
+          winner: this._xScore > this._oScore ? this.state.x : this.state.o,
+        };
+      }
+    }
   }
 }
