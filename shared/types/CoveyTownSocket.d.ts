@@ -268,6 +268,7 @@ export type InteractableCommandReturnType<CommandType extends InteractableComman
   CommandType extends JoinGameCommand ? { gameID: string}:
   CommandType extends ViewingAreaUpdateCommand ? undefined :
   CommandType extends GameMoveCommand<TicTacToeMove> ? undefined :
+  CommandType extends GameMoveCommand<QuantumTicTacToeMove> ? undefined :
   CommandType extends LeaveGameCommand ? undefined :
   never;
 

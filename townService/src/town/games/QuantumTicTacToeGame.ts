@@ -74,37 +74,6 @@ export default class QuantumTicTacToeGame extends Game<
     };
   }
 
-  private get _boards() {
-    const { moves } = this.state;
-    const boards = {
-      A: [
-        ['', '', ''],
-        ['', '', ''],
-        ['', '', ''],
-      ],
-      B: [
-        ['', '', ''],
-        ['', '', ''],
-        ['', '', ''],
-      ],
-      C: [
-        ['', '', ''],
-        ['', '', ''],
-        ['', '', ''],
-      ],
-    };
-    for (const move of moves) {
-      if (move.board === 'A') {
-        boards.A[move.row][move.col] = move.gamePiece;
-      } else if (move.board === 'B') {
-        boards.B[move.row][move.col] = move.gamePiece;
-      } else {
-        boards.C[move.row][move.col] = move.gamePiece;
-      }
-    }
-    return boards;
-  }
-
   protected _join(player: Player): void {
     // TODO: implement me
     if (this.state.x === player.id || this.state.o === player.id) {
@@ -223,7 +192,6 @@ export default class QuantumTicTacToeGame extends Game<
   public applyMove(move: GameMove<QuantumTicTacToeMove>): void {
     this._validateMove(move);
 
-    // TODO: implement the guts of this method
     try {
       this._games[move.move.board].applyMove(move, true);
       this._moveCount++;
