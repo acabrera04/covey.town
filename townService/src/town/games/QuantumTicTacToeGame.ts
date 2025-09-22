@@ -74,6 +74,47 @@ export default class QuantumTicTacToeGame extends Game<
     };
   }
 
+  private _reset(): void {
+    this.state = {
+      moves: [],
+      xScore: 0,
+      oScore: 0,
+      publiclyVisible: {
+        A: [
+          [false, false, false],
+          [false, false, false],
+          [false, false, false],
+        ],
+        B: [
+          [false, false, false],
+          [false, false, false],
+          [false, false, false],
+        ],
+        C: [
+          [false, false, false],
+          [false, false, false],
+          [false, false, false],
+        ],
+      },
+      x: undefined,
+      o: undefined,
+      status: 'WAITING_TO_START',
+    };
+    this._xScore = 0;
+    this._oScore = 0;
+    this._moveCount = 0;
+    this._games = {
+      A: new TicTacToeGame(),
+      B: new TicTacToeGame(),
+      C: new TicTacToeGame(),
+    };
+    this._gamesWon = {
+      A: false,
+      B: false,
+      C: false,
+    };
+  }
+
   protected _join(player: Player): void {
     // TODO: implement me
     if (this.state.x === player.id || this.state.o === player.id) {
@@ -112,44 +153,8 @@ export default class QuantumTicTacToeGame extends Game<
     this._games.B.leave(player);
     this._games.C.leave(player);
     // Handles case where the game has not started yet or both players leave
-    if (this.state.o === undefined) {
-      // code is repeated with constructor, so find a way to reduce
-      this.state = {
-        moves: [],
-        xScore: 0,
-        oScore: 0,
-        publiclyVisible: {
-          A: [
-            [false, false, false],
-            [false, false, false],
-            [false, false, false],
-          ],
-          B: [
-            [false, false, false],
-            [false, false, false],
-            [false, false, false],
-          ],
-          C: [
-            [false, false, false],
-            [false, false, false],
-            [false, false, false],
-          ],
-        },
-        status: 'WAITING_TO_START',
-      };
-      this._xScore = 0;
-      this._oScore = 0;
-      this._moveCount = 0;
-      this._games = {
-        A: new TicTacToeGame(),
-        B: new TicTacToeGame(),
-        C: new TicTacToeGame(),
-      };
-      this._gamesWon = {
-        A: false,
-        B: false,
-        C: false,
-      };
+    if (this.state.o === undefined || this.state.x === undefined) {
+      this._reset();
       return;
     }
     if (this.state.x === player.id) {
@@ -157,12 +162,14 @@ export default class QuantumTicTacToeGame extends Game<
         ...this.state,
         status: 'OVER',
         winner: this.state.o,
+        x: undefined,
       };
     } else {
       this.state = {
         ...this.state,
         status: 'OVER',
         winner: this.state.x,
+        o: undefined,
       };
     }
   }
@@ -178,9 +185,9 @@ export default class QuantumTicTacToeGame extends Game<
       throw new InvalidParametersError(BOARD_POSITION_NOT_EMPTY_MESSAGE);
     }
     // A move is only valid if it is the player's turn
-    if (move.move.gamePiece === 'X' && this.state.moves.length % 2 === 1) {
+    if (move.playerID === this.state.x && this.state.moves.length % 2 === 1) {
       throw new InvalidParametersError(MOVE_NOT_YOUR_TURN_MESSAGE);
-    } else if (move.move.gamePiece === 'O' && this.state.moves.length % 2 === 0) {
+    } else if (move.playerID === this.state.o && this.state.moves.length % 2 === 0) {
       throw new InvalidParametersError(MOVE_NOT_YOUR_TURN_MESSAGE);
     }
     // A move is valid only if game is in progress
@@ -238,7 +245,7 @@ export default class QuantumTicTacToeGame extends Game<
             ...this.state,
             xScore: this._xScore,
           };
-        } else {
+        } else if (gameBoard.state.winner === this.state.o) {
           this._oScore++;
           this.state = {
             ...this.state,
