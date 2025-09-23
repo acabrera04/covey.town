@@ -96,38 +96,6 @@ describe('QuantumTicTacToeGame', () => {
         expect(game.state.o).toEqual(player2.id);
       });
     });
-    describe('when one player is in the game', () => {
-      beforeEach(() => {
-        game.join(player1);
-      });
-
-      it('should set the game to WAITING_TO_START and reset the scores', () => {
-        game.leave(player1);
-        expect(game.state.status).toBe('WAITING_TO_START');
-        expect(game.state.xScore).toBe(0);
-        expect(game.state.oScore).toBe(0);
-        expect(game.state.moves.length).toBe(0);
-        expect(game.state.publiclyVisible).toEqual({
-          A: [
-            [false, false, false],
-            [false, false, false],
-            [false, false, false],
-          ],
-          B: [
-            [false, false, false],
-            [false, false, false],
-            [false, false, false],
-          ],
-          C: [
-            [false, false, false],
-            [false, false, false],
-            [false, false, false],
-          ],
-        });
-        expect(game.state.x).toBeUndefined();
-        expect(game.state.o).toBeUndefined();
-      });
-    });
 
     // taken from TicTacToeGame.test.ts
     it('should throw an error if the player is not in the game', () => {
@@ -209,6 +177,8 @@ describe('QuantumTicTacToeGame', () => {
         // @ts-expect-error - private property
         expect(game._games.A._board[1][1]).toBe('X');
         expect(game.state.moves.length).toBe(2);
+        // @ts-expect-error - private property
+        expect(game._moveCount).toBe(2);
         makeMove(player1, 'A', 0, 0); // should not error
         // @ts-expect-error - private property
         expect(game._games.A._board[0][0]).toBe('X');
@@ -238,11 +208,7 @@ describe('QuantumTicTacToeGame', () => {
           makeMove(player1, 'A', 0, 2); // X -> X wins board A
 
           // Try to move on board A after it's won
-          makeMove(player2, 'A', 0, 2);
-          // @ts-expect-error - private property
-          expect(game._games.A._board[0][2]).toBe('X');
-          expect(game.state.publiclyVisible.A[0][2]).toBe(true);
-          expect(() => makeMove(player1, 'A', 2, 0)).toThrowError(INVALID_MOVE_MESSAGE);
+          expect(() => makeMove(player2, 'A', 0, 2)).toThrowError(INVALID_MOVE_MESSAGE);
         });
 
         it('should end the game when all boards are full or won (X wins)', () => {

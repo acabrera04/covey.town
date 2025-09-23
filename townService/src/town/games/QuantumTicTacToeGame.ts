@@ -164,6 +164,9 @@ export default class QuantumTicTacToeGame extends Game<
     if (this.state.status !== 'IN_PROGRESS') {
       throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
     }
+    if (this._gamesWon[move.move.board]) {
+      throw new InvalidParametersError(INVALID_MOVE_MESSAGE);
+    }
 
     // The player must be in the game
     if (move.playerID !== this.state.x && move.playerID !== this.state.o) {
@@ -220,25 +223,16 @@ export default class QuantumTicTacToeGame extends Game<
     } catch (e) {
       // If a player makes a move on a square that's already occupied or the board is over, they lose their turn (so don't error)
       // and that square is revealed on the public board
-      if (
-        e instanceof InvalidParametersError &&
-        (e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE ||
-          this._games[move.move.board].state.status === 'OVER')
-      ) {
+      if (e instanceof InvalidParametersError && e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE) {
         // Copying the array for updating https://bobbyhadz.com/blog/typescript-array-deep-copy#create-a-deep-copy-of-an-array-in-typescript
         const newPubliclyVisible = JSON.parse(JSON.stringify(this.state.publiclyVisible));
-        if (e.message === BOARD_POSITION_NOT_EMPTY_MESSAGE) {
-          newPubliclyVisible[move.move.board][move.move.row][move.move.col] = true;
-          this._moveCount++;
-          this.state = {
-            ...this.state,
-            publiclyVisible: newPubliclyVisible,
-            moves: [...this.state.moves, move.move],
-          };
-        } else {
-          // If the player attempts to play on a board that is over, we throw an error
-          throw new InvalidParametersError(INVALID_MOVE_MESSAGE);
-        }
+        newPubliclyVisible[move.move.board][move.move.row][move.move.col] = true;
+        this._moveCount++;
+        this.state = {
+          ...this.state,
+          publiclyVisible: newPubliclyVisible,
+          moves: [...this.state.moves, move.move],
+        };
       } else {
         throw e;
       }
