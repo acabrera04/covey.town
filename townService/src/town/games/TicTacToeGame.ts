@@ -5,6 +5,7 @@ import InvalidParametersError, {
   MOVE_NOT_YOUR_TURN_MESSAGE,
   PLAYER_ALREADY_IN_GAME_MESSAGE,
   PLAYER_NOT_IN_GAME_MESSAGE,
+  INVALID_MOVE_MESSAGE,
 } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
 import { GameMove, TicTacToeGameState, TicTacToeMove } from '../../types/CoveyTownSocket';
@@ -86,6 +87,11 @@ export default class TicTacToeGame extends Game<TicTacToeGameState, TicTacToeMov
   }
 
   private _validateMove(move: TicTacToeMove, skipTurnValidation: boolean) {
+    // A move is invalid if they already played on the same piece
+    if (move.gamePiece === this._board[move.row][move.col]) {
+      throw new InvalidParametersError(INVALID_MOVE_MESSAGE);
+    }
+
     // A move is valid if the space is empty
     for (const m of this.state.moves) {
       if (m.col === move.col && m.row === move.row) {
@@ -101,7 +107,6 @@ export default class TicTacToeGame extends Game<TicTacToeGameState, TicTacToeMov
         throw new InvalidParametersError(MOVE_NOT_YOUR_TURN_MESSAGE);
       }
     }
-
     // A move is valid only if game is in progress
     if (this.state.status !== 'IN_PROGRESS') {
       throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
