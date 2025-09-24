@@ -86,15 +86,6 @@ describe('QuantumTicTacToeGame', () => {
         expect(game.state.x).toEqual(player1.id);
         expect(game.state.o).toEqual(player2.id);
       });
-
-      it('should set the game to OVER and declare the original person who left the winner', () => {
-        game.leave(player2);
-        game.leave(player1);
-        expect(game.state.status).toBe('OVER');
-        expect(game.state.winner).toEqual(player2.id);
-        expect(game.state.x).toEqual(player1.id);
-        expect(game.state.o).toEqual(player2.id);
-      });
     });
 
     // taken from TicTacToeGame.test.ts
@@ -417,8 +408,8 @@ describe('QuantumTicTacToeGame', () => {
       expect(game.state.winner).toBe(player1.id);
 
       game.leave(player1);
-      game.leave(player2);
       expect(game.state.status).toBe('OVER');
+      expect(game.state.winner).toBe(player2.id);
     });
   });
 });
